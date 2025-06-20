@@ -1,0 +1,230 @@
+/* Breadcrumb section */
+.breadcrumb {
+    text-align: center;
+    padding: 15px 0;
+    margin-bottom: 30px;
+    margin-top: 30px;
+}
+
+.breadcrumb .container {
+    display: inline-block;
+    padding: 8px 20px;
+    font-size: 20px;
+    font-weight: 700;
+    position: relative;
+    margin-top: 55px;
+    margin-bottom: 10px; /* Thêm khoảng cách dưới container */
+}
+
+.breadcrumb a {
+    color: #080808;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #1a73e8;
+}
+
+.breadcrumb .separator {
+    margin: 0 5px;
+    color: #000000;
+}
+
+.breadcrumb .current {
+    color: #000000;
+}
+
+.breadcrumb .container::after {
+    content: '';
+    position: absolute;
+    bottom: -10px; /* Đẩy gạch xuống dưới 20px */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 2px;
+    background-color: #0d223f;
+}
+
+/* Page title section */
+.page-title {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.page-title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 30px 0;
+}
+
+/* ===== Contact Section Modern Style ===== */
+.contact-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    margin-bottom: 60px; /* hoặc 80px nếu muốn rộng hơn */
+}
+
+.contact-title {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a237e;
+    margin: 30px 0;
+}
+
+.contact-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+/* Company Info Styles */
+.company-info {
+    padding-right: 20px;
+}
+
+.company-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+.hotline {
+    margin: 15px 0;
+}
+
+.hotline a {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.company-address {
+    margin: 15px 0;
+    line-height: 1.6;
+}
+
+.company-address p {
+    margin: 8px 0;
+    color: #444;
+}
+
+.map-container {
+    margin-top: 20px;
+}
+
+.map-container iframe {
+    width: 100%;
+    height: 300px;
+    border: none;
+}
+
+/* Contact Form Styles */
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.contact-form input,
+.contact-form textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+
+.submit-btn {
+    padding: 12px;
+    background: linear-gradient(90deg, #0066cc, #ff3366);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+}
+
+/* Form Heading Style */
+.form-heading {
+    font-size: 1.5rem;
+    color: #000000;
+    font-weight: 500;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .contact-content {
+        flex-direction: column;
+        padding: 24px;
+    }
+    
+    .contact-info {
+        padding-right: 0;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .contact-wrapper {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .company-info {
+        padding-right: 0;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .contact-title {
+        font-size: 1.8rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .contact-form {
+        padding: 20px;
+    }
+}
