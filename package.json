@@ -4,29 +4,32 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "npm install",
+    "build": "npm install --omit=dev && npm rebuild bcrypt --update-binary",
     "dev": "nodemon server.js",
+    "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Your Name <your.email@example.com>",
   "license": "ISC",
   "description": "Website bán hàng với giao diện hiện đại",
-    "dependencies": {
+  "dependencies": {
     "express": "^5.1.0",
-    "sqlite3": "^5.1.6",
+    "pg": "^8.11.3",
     "body-parser": "^2.0.0",
     "cors": "^2.8.5",
     "morgan": "^1.10.0",
     "path": "^0.12.7",
-    "bcrypt": "^5.1.1",     
-    "multer": "^1.4.5-lts.1"
+    "bcrypt": "^5.1.1",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "sqlite3": "^5.1.6"
   },
   "engines": {
-    "node": "18.x",
-    "npm": "9.x"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
