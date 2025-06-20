@@ -12,13 +12,15 @@
   "author": "Your Name <your.email@example.com>",
   "license": "ISC",
   "description": "Website bán hàng với giao diện hiện đại",
-  "dependencies": {
+    "dependencies": {
     "express": "^5.1.0",
     "sqlite3": "^5.1.6",
     "body-parser": "^2.0.0",
     "cors": "^2.8.5",
     "morgan": "^1.10.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "bcrypt": "^5.1.1",     
+    "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
