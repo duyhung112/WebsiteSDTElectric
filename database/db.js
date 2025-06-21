@@ -1,48 +1,69 @@
-const path = require('path');
-const fs = require('fs');
-// Thay đổi từ sqlite3 sang mysql2/promise để sử dụng async/await
+require('dotenv').config();
 const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 
-// Cấu hình kết nối MySQL.
-// Sử dụng biến môi trường do Railway cung cấp.
-// Cung cấp giá trị mặc định cho môi trường local để dễ phát triển.
-const connectionConfig = {
-  host: process.env.MYSQLHOST || 'mysql.railway.internal',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || 'DHVTGEXHOfqDWVYhqSzMVqJQaPkVAJqT', // Thay đổi mật khẩu local của bạn nếu có
-  database: process.env.MYSQLDATABASE || 'railway', // Thay đổi tên DB local của bạn
-  port: process.env.MYSQLPORT ? parseInt(process.env.MYSQLPORT, 10) : 3306,
-  multipleStatements: true // Cho phép chạy nhiều câu lệnh SQL từ file
+// Debug thông số kết nối
+console.log('🔧 Config:', {
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  database: process.env.DB_NAME
+});
+
+const config = {
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  connectTimeout: 10000,
+  // ĐÃ BỎ PHẦN SSL
 };
 
-async function initializeDbConnection() {
-    try {
-        // Bước 1: Kết nối tạm thời để đảm bảo database tồn tại (hữu ích cho local dev)
-        const tempConnection = await mysql.createConnection({
-            host: connectionConfig.host,
-            user: connectionConfig.user,
-            password: connectionConfig.password,
-            port: connectionConfig.port
-        });
-        await tempConnection.query(`CREATE DATABASE IF NOT EXISTS \`${connectionConfig.database}\`;`);
-        await tempConnection.end();
+const pool = mysql.createPool(config);
 
-        // Bước 2: Tạo một connection pool để quản lý kết nối hiệu quả
-        const pool = mysql.createPool(connectionConfig);
-        const promisePool = pool.promise(); // Lấy phiên bản hỗ trợ promise/await
-        console.log('Connection pool tới MySQL đã được tạo thành công!');
-
-        // Bước 3: Đọc và thực thi file init.sql để tạo bảng
-        console.log('Đang kiểm tra và tạo bảng từ init.sql...');
-        const initSqlPath = path.join(__dirname, '..', 'init.sql');
-        const initSql = fs.readFileSync(initSqlPath, 'utf8');
-        await promisePool.query(initSql); // Dùng pool để chạy script khởi tạo
-        console.log('Đã kiểm tra/tạo các bảng thành công!');
-
-        return promisePool;
-    } catch (err) {
-        console.error('Khởi tạo database thất bại:', err.message);
-        process.exit(1); // Thoát ứng dụng nếu không kết nối được DB
+const testConnection = async () => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    const [rows] = await conn.query('SELECT 1+1 AS result');
+    console.log('✅ Kết nối thành công! Kết quả:', rows[0].result);
+    return true;
+  } catch (err) {
+    console.error('❌ Lỗi kết nối:', err.message);
+    console.log('👉 Cần kiểm tra:');
+    console.log('1. Password trong .env có đúng?');
+    console.log('2. IP của bạn đã được whitelist?');
+    console.log('3. Thông số host/port:', config.host, config.port);
+    return false;
+  } finally {
+    if (conn) conn.release();
+  }
+};
+// tạo bảng từ init.sql
+const initializeDatabase = async () => {
+  const initScript = fs.readFileSync(
+    path.join(__dirname, 'init.sql'), 
+    'utf-8'
+  );
+  
+  const conn = await pool.getConnection();
+  try {
+    // Chạy từng câu lệnh SQL
+    for (const statement of initScript.split(';')) {
+      if (statement.trim()) {
+        await conn.query(statement);
+      }
     }
-}
-module.exports = initializeDbConnection(); // Export một Promise sẽ resolve ra đối tượng pool
+    console.log('✅ Đã tạo bảng thành công');
+  } catch (err) {
+    console.error('❌ Lỗi khi tạo bảng:', err.message);
+    throw err;
+  } finally {
+    conn.release();
+  }
+};
+
+
+module.exports = { pool, testConnection, initializeDatabase };
