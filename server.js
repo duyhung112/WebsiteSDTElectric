@@ -1,246 +1,255 @@
 const express = require('express');
 const path = require('path');
-const db = require('./database/db');
+const dbPromise = require('./database/db'); // db giờ là một Promise
 const bcrypt = require('bcrypt');
 const multer = require('multer');
-const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const database = new sqlite3.Database(
-  path.join(__dirname, 'database', 'banhang.db'),
-  (err) => {
-    if (err) {
-      console.error('Kết nối SQLite thất bại:', err.message);
-    } else {
-      console.log('Kết nối SQLite thành công!');
-    }
-  }
-);
-
 // Cấu hình multer để lưu trữ ảnh sản phẩm
 const upload = multer({ dest: path.join(__dirname, 'src/img/products') });
 
-// Lấy danh sách banner
-app.get('/api/banners', (req, res) => {
-    db.all('SELECT * FROM banners', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
+// Helper cho truy vấn SELECT (trả về nhiều dòng)
+function queryAll(sql, params = []) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await dbPromise; // Chờ kết nối database được thiết lập
+            const [rows] = await db.execute(sql, params); // Sử dụng execute cho prepared statements
+            resolve(rows);
+        } catch (err) {
+            reject(err);
+        }
     });
+}
+// Helper cho truy vấn SELECT (trả về 1 dòng)
+function queryOne(sql, params = []) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await dbPromise;
+            const [rows] = await db.execute(sql, params);
+            resolve(rows[0]);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+// Helper cho truy vấn INSERT/UPDATE/DELETE
+function runQuery(sql, params = []) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await dbPromise;
+            const [result] = await db.execute(sql, params);
+            resolve(result);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+// Lấy danh sách banner
+app.get('/api/banners', async (req, res) => {
+    try {
+        const rows = await queryAll('SELECT * FROM banners');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Thêm banner (chỉ nhận đường dẫn ảnh, chưa upload file)
-app.post('/api/banners', (req, res) => {
+// Thêm banner
+app.post('/api/banners', async (req, res) => {
     const { image, title, event } = req.body;
-    db.run(
-        'INSERT INTO banners (image, title, event) VALUES (?, ?, ?)',
-        [image, title, event],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: this.lastID, image, title, event });
-        }
-    );
+    try {
+        const result = await runQuery('INSERT INTO banners (image, title, event) VALUES (?, ?, ?)', [image, title, event]);
+        res.json({ id: result.insertId, image, title, event });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Xóa banner
-app.delete('/api/banners/:id', (req, res) => {
-    db.run('DELETE FROM banners WHERE id = ?', [req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/banners/:id', async (req, res) => {
+    try {
+        await runQuery('DELETE FROM banners WHERE id = ?', [req.params.id]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Đăng ký user
 app.post('/api/register', async (req, res) => {
     const { username, password, email, phone } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, row) => {
-        if (row) return res.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
+    try {
+        const user = await queryOne('SELECT * FROM users WHERE username = ?', [username]);
+        if (user) return res.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
         const hash = await bcrypt.hash(password, 10);
-        db.run(
-            'INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)',
-            [username, hash, email, phone],
-            function (err) {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ success: true, id: this.lastID });
-            }
-        );
-    });
+        const result = await runQuery('INSERT INTO users (username, password, email, phone) VALUES (?, ?, ?, ?)', [username, hash, email, phone]);
+        res.json({ success: true, id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Đăng nhập user
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
-        if (err) return res.status(500).json({ error: 'Lỗi server' });
+    try {
+        const user = await queryOne('SELECT * FROM users WHERE username = ?', [username]);
         if (!user) return res.status(400).json({ error: 'Sai tên đăng nhập hoặc mật khẩu' });
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(400).json({ error: 'Sai tên đăng nhập hoặc mật khẩu' });
-        // Trả về role trực tiếp
         res.json({ success: true, role: user.role });
-    });
+    } catch (err) {
+        res.status(500).json({ error: 'Lỗi server' });
+    }
 });
 
 // API đếm số lượng user
-app.get('/api/users/count', (req, res) => {
-    db.get('SELECT COUNT(*) as count FROM users', [], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.get('/api/users/count', async (req, res) => {
+    try {
+        const row = await queryOne('SELECT COUNT(*) as count FROM users');
         res.json({ count: row.count });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Lấy danh sách user
-app.get('/api/users', (req, res) => {
-    db.all('SELECT id, username, email, phone, role, created_at FROM users', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.get('/api/users', async (req, res) => {
+    try {
+        const rows = await queryAll('SELECT id, username, email, phone, role, created_at FROM users');
         res.json(rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Thêm user mới
 app.post('/api/users', async (req, res) => {
     const { username, password, email, phone, role } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, row) => {
-        if (row) return res.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
+    try {
+        const user = await queryOne('SELECT * FROM users WHERE username = ?', [username]);
+        if (user) return res.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
         const hash = await bcrypt.hash(password, 10);
-        db.run(
-            'INSERT INTO users (username, password, email, phone, role) VALUES (?, ?, ?, ?, ?)',
-            [username, hash, email, phone, role || 'user'],
-            function (err) {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ success: true, id: this.lastID });
-            }
-        );
-    });
+        const result = await runQuery('INSERT INTO users (username, password, email, phone, role) VALUES (?, ?, ?, ?, ?)', [username, hash, email, phone, role || 'user']);
+        res.json({ success: true, id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Xóa user
-app.delete('/api/users/:id', (req, res) => {
-    // Không cho phép xóa user admin mặc định (id=1 hoặc username='admin')
-    db.get('SELECT * FROM users WHERE id = ?', [req.params.id], (err, user) => {
+app.delete('/api/users/:id', async (req, res) => {
+    try {
+        const user = await queryOne('SELECT * FROM users WHERE id = ?', [req.params.id]);
         if (user && user.role === 'admin') {
             return res.status(400).json({ error: 'Không thể xóa tài khoản admin!' });
         }
-        db.run('DELETE FROM users WHERE id = ?', [req.params.id], function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true });
-        });
-    });
+        await runQuery('DELETE FROM users WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Sửa thông tin user (không cho sửa username, chỉ sửa email, phone, role, password nếu nhập mới)
+// Sửa thông tin user
 app.put('/api/users/:id', async (req, res) => {
     const { email, phone, role, password } = req.body;
-    let sql = 'UPDATE users SET email = ?, phone = ?, role = ?';
-    let params = [email, phone, role, req.params.id];
-
-    if (password) {
-        const hash = await bcrypt.hash(password, 10);
-        sql = 'UPDATE users SET email = ?, phone = ?, role = ?, password = ? WHERE id = ?';
-        params = [email, phone, role, hash, req.params.id];
-    } else {
-        sql += ' WHERE id = ?';
-    }
-
-    db.run(sql, params, function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        let sql, params;
+        if (password) {
+            const hash = await bcrypt.hash(password, 10);
+            sql = 'UPDATE users SET email = ?, phone = ?, role = ?, password = ? WHERE id = ?';
+            params = [email, phone, role, hash, req.params.id];
+        } else {
+            sql = 'UPDATE users SET email = ?, phone = ?, role = ? WHERE id = ?';
+            params = [email, phone, role, req.params.id];
+        }
+        await runQuery(sql, params);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Lấy danh sách danh mục
-app.get('/api/categories', (req, res) => {
-    db.all('SELECT * FROM categories', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.get('/api/categories', async (req, res) => {
+    try {
+        const rows = await queryAll('SELECT * FROM categories');
         res.json(rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Thêm danh mục
-app.post('/api/categories', (req, res) => {
+app.post('/api/categories', async (req, res) => {
     const { name, description } = req.body;
-    db.run(
-        'INSERT INTO categories (name, description) VALUES (?, ?)',
-        [name, description],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true, id: this.lastID });
-        }
-    );
+    try {
+        const result = await runQuery('INSERT INTO categories (name, description) VALUES (?, ?)', [name, description]);
+        res.json({ success: true, id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Sửa danh mục
-app.put('/api/categories/:id', (req, res) => {
+app.put('/api/categories/:id', async (req, res) => {
     const { name, description } = req.body;
-    db.run(
-        'UPDATE categories SET name = ?, description = ? WHERE id = ?',
-        [name, description, req.params.id],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true });
-        }
-    );
+    try {
+        await runQuery('UPDATE categories SET name = ?, description = ? WHERE id = ?', [name, description, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Xóa danh mục (chỉ cho xóa nếu không có sản phẩm thuộc danh mục)
-app.delete('/api/categories/:id', (req, res) => {
-    db.get('SELECT COUNT(*) as count FROM products WHERE category_id = ?', [req.params.id], (err, row) => {
+// Xóa danh mục
+app.delete('/api/categories/:id', async (req, res) => {
+    try {
+        const row = await queryOne('SELECT COUNT(*) as count FROM products WHERE category_id = ?', [req.params.id]);
         if (row && row.count > 0) {
             return res.status(400).json({ error: 'Không thể xóa danh mục đã có sản phẩm!' });
         }
-        db.run('DELETE FROM categories WHERE id = ?', [req.params.id], function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true });
-        });
-    });
+        await runQuery('DELETE FROM categories WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Lấy danh sách sản phẩm (có tên danh mục)
-app.get('/api/products', (req, res) => {
-    db.all(`SELECT products.*, categories.name as category_name, brands.name as brand_name
-            FROM products
-            LEFT JOIN categories ON products.category_id = categories.id
-            LEFT JOIN brands ON products.brand_id = brands.id`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
+// Lấy danh sách sản phẩm
+app.get('/api/products', async (req, res) => {
+    try {
+        const rows = await queryAll(`SELECT products.*, categories.name as category_name, brands.name as brand_name FROM products LEFT JOIN categories ON products.category_id = categories.id LEFT JOIN brands ON products.brand_id = brands.id`);
         res.json(rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Thêm sản phẩm
-app.post('/api/products', (req, res) => {
+app.post('/api/products', async (req, res) => {
     const { name, price, category_id, brand_id, image, featured, new: isNew } = req.body;
-    db.run(
-        'INSERT INTO products (name, price, category_id, brand_id, image, featured, new_products) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [name, price, category_id, brand_id, image, featured || 0, isNew || 0],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true, id: this.lastID });
-        }
-    );
+    try {
+        const result = await runQuery('INSERT INTO products (name, price, category_id, brand_id, image, featured, new_products) VALUES (?, ?, ?, ?, ?, ?, ?)', [name, price, category_id, brand_id, image, featured || 0, isNew || 0]);
+        res.json({ success: true, id: result.insertId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Sửa sản phẩm
 app.put('/api/products/:id', async (req, res) => {
+    const { name, price, category_id, image, featured, new: isNew } = req.body;
     try {
-        const { id } = req.params;
-        const { name, price, category_id, image, featured, new: isNew } = req.body;
-        const product = await db.get('SELECT * FROM products WHERE id = ?', [id]);
+        const product = await queryOne('SELECT * FROM products WHERE id = ?', [req.params.id]);
         if (!product) return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
-
-        await db.run(
-            'UPDATE products SET name=?, price=?, category_id=?, image=?, featured=?, new=? WHERE id=?',
-            [
-                name || product.name,
-                price || product.price,
-                category_id || product.category_id,
-                image || product.image,
-                typeof featured !== 'undefined' ? featured : product.featured,
-                typeof isNew !== 'undefined' ? isNew : product.new,
-                id
-            ]
-        );
+        await runQuery('UPDATE products SET name=?, price=?, category_id=?, image=?, featured=?, new_products=? WHERE id=?', [name || product.name, price || product.price, category_id || product.category_id, image || product.image, typeof featured !== 'undefined' ? featured : product.featured, typeof isNew !== 'undefined' ? isNew : product.new_products, req.params.id]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -248,11 +257,13 @@ app.put('/api/products/:id', async (req, res) => {
 });
 
 // Xóa sản phẩm
-app.delete('/api/products/:id', (req, res) => {
-    db.run('DELETE FROM products WHERE id = ?', [req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/products/:id', async (req, res) => {
+    try {
+        await runQuery('DELETE FROM products WHERE id = ?', [req.params.id]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Tải ảnh sản phẩm lên
@@ -261,28 +272,17 @@ app.post('/api/upload-product-image', upload.single('image'), (req, res) => {
     res.json({ image: 'img/products/' + req.file.filename });
 });
 
-// API cập nhật trạng thái nổi bật của sản phẩm
+// Cập nhật trạng thái nổi bật của sản phẩm
 app.put('/api/products/:id/featured', async (req, res) => {
+    const { featured } = req.body;
     try {
-        const { featured } = req.body;
-        const id = req.params.id;
-        
-        // Kiểm tra số lượng sản phẩm nổi bật hiện tại
         if (featured === 1) {
-            const featuredCount = await db.get(
-                'SELECT COUNT(*) as count FROM products WHERE featured = 1'
-            );
-            if (featuredCount.count >= 4) {
-                return res.status(400).json({
-                    error: 'Chỉ được chọn tối đa 4 sản phẩm nổi bật!'
-                });
+            const row = await queryOne('SELECT COUNT(*) as count FROM products WHERE featured = 1');
+            if (row.count >= 4) {
+                return res.status(400).json({ error: 'Chỉ được chọn tối đa 4 sản phẩm nổi bật!' });
             }
         }
-
-        await db.run(
-            'UPDATE products SET featured = ? WHERE id = ?',
-            [featured, id]
-        );
+        await runQuery('UPDATE products SET featured = ? WHERE id = ?', [featured, req.params.id]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -290,37 +290,45 @@ app.put('/api/products/:id/featured', async (req, res) => {
 });
 
 // Lấy danh sách thương hiệu
-app.get('/api/brands', (req, res) => {
-    db.all('SELECT * FROM brands', (err, rows) => {
-        if (err) return res.status(500).json({error: err.message});
+app.get('/api/brands', async (req, res) => {
+    try {
+        const rows = await queryAll('SELECT * FROM brands');
         res.json(rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Thêm thương hiệu
-app.post('/api/brands', (req, res) => {
+app.post('/api/brands', async (req, res) => {
     const { name } = req.body;
-    db.run('INSERT INTO brands (name) VALUES (?)', [name], function(err) {
-        if (err) return res.status(500).json({error: err.message});
-        res.json({ id: this.lastID, name });
-    });
+    try {
+        const result = await runQuery('INSERT INTO brands (name) VALUES (?)', [name]);
+        res.json({ id: result.insertId, name });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Sửa thương hiệu
-app.put('/api/brands/:id', (req, res) => {
+app.put('/api/brands/:id', async (req, res) => {
     const { name } = req.body;
-    db.run('UPDATE brands SET name=? WHERE id=?', [name, req.params.id], function(err) {
-        if (err) return res.status(500).json({error: err.message});
+    try {
+        await runQuery('UPDATE brands SET name=? WHERE id=?', [name, req.params.id]);
         res.json({ id: req.params.id, name });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Xóa thương hiệu
-app.delete('/api/brands/:id', (req, res) => {
-    db.run('DELETE FROM brands WHERE id=?', [req.params.id], function(err) {
-        if (err) return res.status(500).json({error: err.message});
+app.delete('/api/brands/:id', async (req, res) => {
+    try {
+        await runQuery('DELETE FROM brands WHERE id=?', [req.params.id]);
         res.json({ success: true });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Phục vụ file tĩnh
