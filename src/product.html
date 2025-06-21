@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sản phẩm - SDT ELECTRIC</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/product.css">
+    <script src="scripts/main.js"></script>
+    <script src="scripts/product.js"></script>
+    <script src="scripts/cart.js"></script>
+    <link rel="icon" href="img/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <div id="header"></div>
+    
+    <div class="mobile-category-toggle">
+        <i class="fas fa-bars"></i> DANH MỤC SẢN PHẨM
+    </div>
+
+    <div class="product-page">
+        <aside class="sidebar">
+            <h2 class="sidebar-title">DANH MỤC SẢN PHẨM</h2>
+            <ul id="product-category-list" class="category-list"></ul>
+        </aside>
+        
+        <main class="product-container">
+            <nav class="breadcrumb">
+                <a href="/">Trang chủ</a> > 
+                <a href="product.html">Sản phẩm</a>
+                <span id="current-category"></span>
+            </nav>
+            
+            <h1 class="page-title">SẢN PHẨM</h1>
+            
+            <div class="product-filter-bar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Tìm kiếm sản phẩm...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <select id="category-filter"></select>
+                <select id="sort-filter">
+                    <option value="">Sắp xếp</option>
+                    <option value="price-asc">Giá tăng dần</option>
+                    <option value="price-desc">Giá giảm dần</option>
+                    <option value="name-asc">Tên A-Z</option>
+                    <option value="name-desc">Tên Z-A</option>
+                </select>
+                
+                <div class="advanced-filter-toggle">
+                    <i class="fas fa-sliders-h"></i> Lọc nâng cao
+                </div>
+            </div>
+            
+            <div class="advanced-filter-panel">
+                <h3>Lọc theo giá</h3>
+                <div class="price-range">
+                    <input type="range" id="price-range" min="0" max="10000000" step="100000">
+                    <div class="price-values">
+                        <span id="min-price">0đ</span>
+                        <span id="max-price">10,000,000đ</span>
+                    </div>
+                </div>
+                <button id="apply-filter">Áp dụng</button>
+            </div>
+            
+            <div id="products-grid" class="products-grid">
+                <div class="loading-spinner"></div>
+            </div>
+            
+            <div id="products-pagination" class="products-pagination"></div>
+        </main>
+    </div>
+    
+    <!-- Modal xem nhanh -->
+    <div id="quick-view-modal" class="quick-view-modal" style="display:none;">
+        <div class="quick-view-content"></div>
+        <span class="close-modal">&times;</span>
+    </div>
+    
+    <div id="footer"></div>
+    
+    <script src="scripts/product.js" type="module"></script>
+</body>
+</html>

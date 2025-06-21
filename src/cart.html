@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng</title>
+    <link rel="stylesheet" href="styles/cart.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <div id="header"></div>
+
+    <main class="cart-container">
+        <div class="cart-content">
+            <div class="cart-header">
+                <h1><i class="fas fa-shopping-cart"></i> GIỎ HÀNG CỦA BẠN</h1>
+                <div class="cart-steps">
+                    <div class="step active">
+                        <span>1</span>
+                        <p>Giỏ hàng</p>
+                    </div>
+                    <div class="step">
+                        <span>2</span>
+                        <p>Thông tin giao hàng</p>
+                    </div>
+                    <div class="step">
+                        <span>3</span>
+                        <p>Thanh toán</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cart-body">
+                <div class="cart-items">
+                    <div class="cart-table-header">
+                        <div class="col-product">Sản phẩm</div>
+                        <div class="col-price">Đơn giá</div>
+                        <div class="col-quantity">Số lượng</div>
+                        <div class="col-total">Thành tiền</div>
+                        <div class="col-action"></div>
+                    </div>
+
+                    <div class="cart-items-list" id="cart-items-container">
+                        <!-- Cart items will be loaded here by JavaScript -->
+                    </div>
+
+                    <div class="cart-actions">
+                        <button class="btn-continue-shopping">
+                            <i class="fas fa-arrow-left"></i> Tiếp tục mua sắm
+                        </button>
+                        <button class="btn-clear-cart">
+                            <i class="fas fa-trash"></i> Xóa giỏ hàng
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cart-summary">
+                    <div class="summary-card">
+                        <h3>TÓM TẮT ĐƠN HÀNG</h3>
+                        
+                        <div class="summary-row">
+                            <span>Tạm tính</span>
+                            <span id="subtotal">0₫</span>
+                        </div>
+                        
+                        <div class="summary-row">
+                            <span>Giảm giá</span>
+                            <span id="discount">0₫</span>
+                        </div>
+                        
+                        <div class="summary-row">
+                            <span>Phí vận chuyển</span>
+                            <span id="shipping">0₫</span>
+                        </div>
+                        
+                        <div class="summary-divider"></div>
+                        
+                        <div class="summary-row total">
+                            <span>Tổng cộng</span>
+                            <span id="total">0₫</span>
+                        </div>
+                        
+                        <div class="coupon-section">
+                            <input type="text" id="coupon-code" placeholder="Mã giảm giá">
+                            <button id="apply-coupon">ÁP DỤNG</button>
+                        </div>
+                        
+                        <button class="btn-checkout">
+                            TIẾN HÀNH THANH TOÁN <i class="fas fa-arrow-right"></i>
+                        </button>
+                        
+                        <div class="secure-checkout">
+                            <i class="fas fa-lock"></i>
+                            <span>Thanh toán an toàn & bảo mật</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-methods">
+                        <h4>CHẤP NHẬN THANH TOÁN</h4>
+                        <div class="payment-icons">
+                            <img src="images/payment/visa.png" alt="Visa">
+                            <img src="images/payment/mastercard.png" alt="Mastercard">
+                            <img src="images/payment/jcb.png" alt="JCB">
+                            <img src="images/payment/momo.png" alt="Momo">
+                            <img src="images/payment/zalopay.png" alt="ZaloPay">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer"></div>
+
+    <script src="scripts/cart.js" type="module"></script>
+</body>
+</html>
