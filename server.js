@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { pool } = require('./database/db'); // Sử dụng MySQL pool thay vì SQLite
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const cors = require('cors');
 require('dotenv').config();
