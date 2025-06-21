@@ -5,19 +5,21 @@
   "scripts": {
     "start": "node server.js",
     "build": "npm install",
-    "dev": "nodemon server.js",
-    "preinstall": "npx npm-force-resolutions"
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
+    "bcryptjs": "^2.4.3",  
     "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "mysql2": "^3.9.7",    
+    "cors": "^2.8.5"      
   },
   "engines": {
-    "node": "18.x"
+    "node": "18.x",
+    "npm": "9.x"
   }
 }
