@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const db = require('./database/db');
+const dbPromise = require('./database/db'); // db giờ là một Promise
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const cors = require('cors');
@@ -14,29 +14,38 @@ const upload = multer({ dest: path.join(__dirname, 'src/img/products') });
 
 // Helper cho truy vấn SELECT (trả về nhiều dòng)
 function queryAll(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.query(sql, params, (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-        });
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await dbPromise; // Chờ kết nối database được thiết lập
+            const [rows] = await db.execute(sql, params); // Sử dụng execute cho prepared statements
+            resolve(rows);
+        } catch (err) {
+            reject(err);
+        }
     });
 }
 // Helper cho truy vấn SELECT (trả về 1 dòng)
 function queryOne(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.query(sql, params, (err, results) => {
-            if (err) reject(err);
-            else resolve(results[0]);
-        });
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await dbPromise;
+            const [rows] = await db.execute(sql, params);
+            resolve(rows[0]);
+        } catch (err) {
+            reject(err);
+        }
     });
 }
 // Helper cho truy vấn INSERT/UPDATE/DELETE
 function runQuery(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.query(sql, params, (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-        });
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await dbPromise;
+            const [result] = await db.execute(sql, params);
+            resolve(result);
+        } catch (err) {
+            reject(err);
+        }
     });
 }
 
