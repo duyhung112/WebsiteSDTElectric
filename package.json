@@ -9,7 +9,12 @@
     "lint": "eslint .",
     "test": "echo \"No test specified\" && exit 0"
   },
-  "keywords": ["ecommerce", "express", "shop", "website"],
+  "keywords": [
+    "ecommerce",
+    "express",
+    "shop",
+    "website"
+  ],
   "author": "Your Name <your.email@example.com>",
   "license": "ISC",
   "type": "commonjs",
@@ -24,6 +29,7 @@
     "express": "^5.1.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.14.1",
     "path": "^0.12.7",
     "sqlite3": "^5.1.6"
   },
